@@ -204,11 +204,11 @@ app = FastAPI()
 handler = Mangum(app)
 
 @app.get("/")
-async def home():
+def home():
     return {"Data": "Home Page"}
 
 @app.post("/test")
-async def test(link: str):
+def test(link: str):
     link = link.strip()
     inp = build_input(link)
     prediction = clf.predict(inp)
@@ -218,7 +218,7 @@ async def test(link: str):
     return {"PREDICTION": prediction}
 
 @app.post("/predict")
-async def predict(web_links: dict):
+def predict(web_links: dict):
     return web_links
 
 if __name__ == "__main__":
