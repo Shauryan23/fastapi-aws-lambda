@@ -7,6 +7,10 @@ import math
 import re
 import requests
 import numpy as np
+from pydantic import BaseModel
+from typing import Dict
+
+# at_riRl0t87FR3oUPp9DH9EfewVqDOgD
 
 def count_digits(word):
   return len(re.findall('[0-9]', word))
@@ -203,23 +207,46 @@ with open("./model/classifier.pkl", "rb") as file:
 app = FastAPI()
 handler = Mangum(app)
 
+class SingleLinkItem(BaseModel):
+    link: str
+
+class MultipleLinksItem(BaseModel):
+    links: Dict[str, str]
+
 @app.get("/")
-def home():
+async def home():
     return {"Data": "Home Page"}
 
-@app.post("/test")
-def test(link: str):
+@app.post("/predict-one")
+async def test(single_link_item: SingleLinkItem):
+    link = single_link_item.link
     link = link.strip()
     inp = build_input(link)
     prediction = clf.predict(inp)
-    print(prediction)
-    print(type(prediction))
+    print(link, " : ", prediction)
     prediction = prediction.tolist()
     return {"PREDICTION": prediction}
 
 @app.post("/predict")
-def predict(web_links: dict):
-    return web_links
+async def predict(multiple_links_input: MultipleLinksItem):
+    input_arr = []
+    web_links = []
+    data = multiple_links_input.links
+    for key,value in data.items():
+      link = value.strip()
+      web_links.append(link)
+      inp = build_input(link)
+      input_arr.append(inp[0])
+    
+    input_numpy_arr = np.array(input_arr)
+    prediction = clf.predict(input_numpy_arr)
+
+    prediction = prediction.tolist()
+    response_obj = {}
+    for key, value in zip(web_links, prediction):
+      response_obj[key] = value
+
+    return response_obj
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080)
